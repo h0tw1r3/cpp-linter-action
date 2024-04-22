@@ -55,6 +55,11 @@ inputs:
       [re-running jobs or workflows](https://docs.github.com/en/actions/managing-workflow-runs/re-running-workflows-and-jobs).
     required: false
     default: info
+  cache:
+    description: |
+      This controls if the python virtual environment is cached.
+    required: false
+    default: false
   lines-changed-only:
     description: |
       This controls what part of the files are analyzed. The following values are accepted:
@@ -233,6 +238,21 @@ runs:
             sudo apt-get install -y clang-format-${{ inputs.version }} clang-tidy-${{ inputs.version }}
           fi
         fi
+
+    - if: ${{ inputs.cache == 'true' }}
+      id: gen-cache-key
+      shell: python {0}
+      run: |
+        import hashlib, os, pathlib
+        bytes = pathlib.Path(os.path.join(os.environ["GITHUB_ACTION_PATH"], 'requirements.txt')).read_bytes()
+        print('::set-output hash=%s' % (hashlib.sha1(bytes).hexdigest()))
+
+    - uses: actions/cache@v4
+      if: ${{ inputs.cache == 'true' }}
+      with:
+        key: cpp-linter-action-venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ steps.gen-cache-key.outputs.hash }}
+        restore-keys: cpp-linter-action-venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
+        path: ${{ github.action_path }}/venv
 
     - name: Setup python venv (Unix)
       if: runner.os == 'Linux' || runner.os == 'macOS'
