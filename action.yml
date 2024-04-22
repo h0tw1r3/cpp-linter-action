@@ -244,8 +244,9 @@ runs:
       shell: python {0}
       run: |
         import hashlib, os, pathlib
-        bytes = pathlib.Path(os.path.join(os.environ["GITHUB_ACTION_PATH"], 'requirements.txt')).read_bytes()
-        print('::set-output hash=%s' % (hashlib.sha1(bytes).hexdigest()))
+        fp = pathlib.Path(os.path.join(os.environ["GITHUB_ACTION_PATH"], 'requirements.txt'))
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+          print('hash=%s' % (hashlib.sha1(fp.read_bytes()).hexdigest()), file=f)
 
     - uses: actions/cache@v4
       if: ${{ inputs.cache == 'true' }}
